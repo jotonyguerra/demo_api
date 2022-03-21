@@ -28,73 +28,38 @@ transfer_config = s3transfer.TransferConfig(
     max_concurrency=20,
 )
 
-#TESTING IGNORE BELOW
-# def pre_up(images="im2pdfTest"):
-#     progress = tqdm.tqdm(
-#         desc="upload", unit="B", unit_scale=1, position=0, bar_format="{desc:<10}{percentage:3.0f}%|{bar:10}{r_bar}"
-#     )
-#     s3t = s3transfer.create_transfer_manager(s3_client, transfer_config)
-#     images_dir = os.listdir(images)
-#     for path in images_dir:
-
-#         f_path = my_path + r"/im2pdfTest/" + path
-#         print(f"path = {path} .... f_path = {f_path}")
-#         s3t.upload(
-#             f_path,
-#             bucket="1testtransfer1",
-#             key=os.path.basename(path),
-#             subscribers=[
-#                 s3transfer.ProgressCallbackInvoker(progress.update),
-#             ],
-#         )
-        # print("Image uploaded")
-
-    s3t.shutdown()
-    progress.close()
-    print("Done pre")
-
-#Not neccessary currently for task. #SET ACL to public-read to not use this.
-def create_presigned_url(bucket_name, object_name, expiration=6600):
-    """Generate a presigned URL to share an S3 object
-    :param bucket_name: string
-    :param object_name: string
-    :param expiration: Time in seconds for the presigned URL to remain valid
-    :return: Presigned URL as string. If error, returns None.
-    """
-    # Generate a presigned URL for the S3 object
-    s3_client = boto3.client("s3")
-    try:
-        response = s3_client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_name}, ExpiresIn=expiration
-        )
-    except ClientError as e:
-        logging.error(e)
-        return None
-    return response
-
-
 # API vars
 API_KEY = os.getenv("API_KEY")
 API_ENDPOINT = "https://api.letsenhance.io/v1/pipeline"  # POST
 GET_API = "https://api.letsenhance.io/v1/pipeline/"
 IMAGE_LOCATION = r"\test"
 
-
+#Header for sending Requests
 headers = {"Content-type": "application/json", "X-API-KEY": API_KEY}
+#open JSON file
 f = open(
     "snippet.json",
 )
 payload = json.load(f)
+
+
 json_width = payload["operations"][3]["width"]
 json_height = payload["operations"][3]["height"]
 
+#File Paths
 current_directory = os.path.dirname(os.path.realpath(__file__))
 pre_enhanced_folder = current_directory + r"\test"
 my_path = os.path.dirname(__file__)
+
+#
 bucket = "upgraded-unfiltered"
+
+#Global Count for number of images processed
 num_processed = 0
 
 #THis all 4x3
+#This function walks through an image directory and then sends the images to the Lets Enhance API.
+#When Lets Enhance finishes the enhancment process the images is downloaded into the Upgraded directory
 def lets_enhance():
     global num_processed
     for root, dirs, files in os.walk(pre_enhanced_folder):
@@ -121,14 +86,15 @@ def lets_enhance():
                 else: #Square
                     json_height = 9600
                     json_width = 9600
-                print(f"width = {json_width}, height = {json_height}")
                 s3_url = "https://original-unfiltered.s3.us-west-1.amazonaws.com/" + file
-                print("s3 = ", s3_url)
                 payload["source"]["http"]["url"] = s3_url
                 request = requests.post(url=API_ENDPOINT, headers=headers, json=payload)
                 print(request.status_code)
+                
                 post_json = request.json()
-                print(post_json)
+                #print(post_json)
+                
+                #id of the image sent in post request
                 id = post_json["pipeline"]["id"]
                 get_id = GET_API + str(id)
                 response = requests.get(get_id, headers=headers)
@@ -137,7 +103,6 @@ def lets_enhance():
                     print("ERROR, problem sending image")
                 json = response.json()
                 print("STATUS = ",json['pipeline']["status"])
-                stop = input("Stopped for review")
                 if json["pipeline"]["status"] == "ERROR":
                     print("Error = \n\n ", json)
                 # print(json)
@@ -166,6 +131,7 @@ def lets_enhance():
                     num_processed += 1
                     print(f"\n\nDone {num_processed} of {len(files)}")
                 else:
+                    #should use logging or better output statements. Sorry was lazy
                     print(f"Error on file: {file}")
                     print(f"\n\nJSON = {json}")
     
