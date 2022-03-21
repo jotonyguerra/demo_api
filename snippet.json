@@ -1,0 +1,42 @@
+{
+    
+    "source": {
+        "http": {
+            "url": "https://firstpythonbucket04b0a6cb-4b38-4cc9-b7f1-9dd3f9f21afe.s3.amazonaws.com/12.jpeg?AWSAccessKeyId=AKIA3FXJGLINEXVGU4F2&Signature=Gt39hxN8PNB67%2BDKIzC6LTudyEM%3D&Expires=1617305478"}
+    },
+    
+    "notify_url": "http://example.com/le-webhook", 
+    "operations": [
+        {
+            "op": "nn/smart_enhance",    
+            "upscale": 2.0
+            
+        },
+        {
+            "op": "nn/jpegar_strong"
+        },
+        {
+            "op": "nn/sorcerer",    
+            "upscale": 2.0
+        },
+        {
+            "op":  "img/resize",
+            "width": 3600,
+	    	"height": 2400
+        },
+        {
+            "op": "img/set_metadata", 
+            "dpi": 300
+        },
+        {
+            "op": "img/encode",
+            "format": "JPEG", 
+            "format_opts": {
+            "quality": 90 
+            }
+        }
+    ],
+    "sink": {
+        "temp_store": true 
+    }
+}
