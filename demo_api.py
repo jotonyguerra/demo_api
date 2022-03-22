@@ -82,9 +82,11 @@ def lets_enhance():
                 else: #Square
                     json_height = 9600
                     json_width = 9600
+
                 s3_url = "https://original-unfiltered.s3.us-west-1.amazonaws.com/" + file
                 payload["source"]["http"]["url"] = s3_url
                 request = requests.post(url=API_ENDPOINT, headers=headers, json=payload)
+
                 print(request.status_code)
                 
                 post_json = request.json()
@@ -94,33 +96,44 @@ def lets_enhance():
                 get_id = GET_API + str(id)
                 response = requests.get(get_id, headers=headers)
                 print("Status code for GET request: ", response.status_code)
+
                 if response.status_code != 200:
                     print("ERROR, problem sending image")
+
                 json = response.json()
                 print("STATUS = ",json['pipeline']["status"])
                 if json["pipeline"]["status"] == "ERROR":
                     print("Error = \n\n ", json)
+
                 headers["Connection"] = "keep-alive"
                 headers["Keep-Alive"] = "timeout=5, max=100"
+
                 while json["pipeline"]["status"] == "PROCESSING":
+
                     response = requests.get(get_id, headers=headers, stream=True)
                     json = response.json()
                     print("Processing")
                 pic.close()
+
                 if json["pipeline"]["status"] == "DONE":
+
                     print(response.json())
                     x = response.json()
+
                     down_URL = x["pipeline"]["results"][0]["output_object"]["tmp_url"]
                     file_name = x["pipeline"]["results"][0]["output_object"]["filename"]
                     r = requests.get(down_URL, stream=True)
+
                     if not os.path.exists("Upgraded"):
                         os.makedirs("Upgraded")
+
                     path_to_upgraded = "./Upgraded/" + file_name
                     with open(path_to_upgraded, "wb") as f:
                         for chunk in r.iter_content(chunk_size=1024):
                             if chunk:
                                 f.write(chunk)
                     num_processed += 1
+                    
                     print(f"\n\nDone {num_processed} of {len(files)}")
                 else:
                     print(f"Error on file: {file}")
