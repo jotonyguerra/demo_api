@@ -166,10 +166,7 @@ def upload_upgrades():
 
 def main():
     print("Main")
-    # pre_up()
-    # hold = input("holdd")
     lets_enhance()
-    #upload_upgrades()
 
 
 if __name__ == "__main__":
